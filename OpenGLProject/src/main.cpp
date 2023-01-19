@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include "functions.h"
 
 int main()
@@ -30,6 +31,12 @@ int main()
     {
     	glViewport(0, 0, wid, hei);
     });
+
+    //initialize GLAD
+    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+        printErr("An error occurred when initializing GLAD");
+        return -1;
+    }
 
     //loop until window is closed
     while (!glfwWindowShouldClose(window))
