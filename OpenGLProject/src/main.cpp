@@ -12,7 +12,7 @@ enum
 int main()
 {
     GLFWwindow* window;
-    unsigned int vertexbufobj, vertarrobj;
+    unsigned int vertexbufobj, vertarrobj, vertelemobj;
 
     //initialize glfw library
     if (!glfwInit())
@@ -53,19 +53,30 @@ int main()
     //create vertices
     float vertices[] =
     {
-        -0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f
+        -0.5f, -0.5f, 0.0f,     //[2|6]+      [4]+
+    	-0.5f,  0.5f, 0.0f,     //
+         0.5f, -0.5f, 0.0f,     //
+         0.5f,  0.5f, 0.0f      //  [1]+    [3|5]+
+    };
+
+    unsigned int indices[] =
+    {
+        0, 1, 2,                //indices of first triangle
+        3, 2, 1                 //indices of second triangle
     };
 
     //create vertex array
     glGenVertexArrays(1, &vertarrobj);
     glBindVertexArray(vertarrobj);
 
-    //copy vertex data into buffer
+    //create vertex buffer and copy vertex data into object
     glGenBuffers(1, &vertexbufobj);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbufobj);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &vertelemobj);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertelemobj);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     //tell OpenGL how to link vertex attributes
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -84,7 +95,8 @@ int main()
         //draw
         myshaders.useshaders();
         glBindVertexArray(vertarrobj);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
         //swap buffer and poll for events
         glfwSwapBuffers(window);
