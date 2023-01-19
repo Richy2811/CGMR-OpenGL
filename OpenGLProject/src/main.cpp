@@ -1,37 +1,23 @@
 #include <glad/glad.h>
 #include "functions.h"
+#include "Shader.h"
+
+//define constants for preferred window size
+enum
+{
+    INIT_WINDOW_WIDTH = 700,
+    INIT_WINDOW_HEIGHT = 500
+};
 
 int main()
 {
     GLFWwindow* window;
-    unsigned int vertexbufobj, vertarrobj, vertexshader, fragmentshader, shaderprogram;
-
-    //GLSL code for vertex shader
-    const char* vertexshaderstring =
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 aPos;"
-        "void main()"
-        "{"
-			"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);"
-        "}";
-
-    //glsl code for fragment shader
-    const char* fragmentshaderstring =
-        "#version 330 core\n"
-        "out vec4 colour;"
-        "void main()"
-        "{"
-			"colour = vec4(0.2f, 0.4f, 1.0f, 1.0f);"
-        "}";
-
-    //debug information
-    int shadercompilesuccess = true;
-    char infolog[512];
+    unsigned int vertexbufobj, vertarrobj;
 
     //initialize glfw library
     if (!glfwInit())
     {
-        printErr("An error occurred when initializing glfw");
+        printErr("An error occurred when initializing GLFW");
 	    return -1;
     }
 
@@ -49,17 +35,20 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-
     glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int wid, int hei)
     {
     	glViewport(0, 0, wid, hei);
     });
 
     //initialize GLAD
-    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
         printErr("An error occurred when initializing GLAD");
         return -1;
     }
+
+    //load and compile shaders
+    Shader myshaders("./shaders/vertex.vert", "./shaders/fragment.frag");
 
     //create vertices
     float vertices[] =
@@ -68,44 +57,6 @@ int main()
          0.0f,  0.5f, 0.0f,
          0.5f, -0.5f, 0.0f
     };
-
-    //create and compile vertex shader
-    vertexshader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexshader, 1, &vertexshaderstring, nullptr);
-    glCompileShader(vertexshader);
-
-    //check for compile errors
-    glGetShaderiv(vertexshader, GL_COMPILE_STATUS, &shadercompilesuccess);
-    if (!shadercompilesuccess)
-    {
-        glGetShaderInfoLog(vertexshader, 512, nullptr, &infolog[0]);
-        printErr("Error compiling vertex shader");
-        printErr(infolog);
-    }
-
-    //create and compile fragment shader
-    fragmentshader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentshader, 1, &fragmentshaderstring, nullptr);
-    glCompileShader(fragmentshader);
-
-    //check for compile errors
-    glGetShaderiv(fragmentshader, GL_COMPILE_STATUS, &shadercompilesuccess);
-    if(!shadercompilesuccess)
-    {
-        glGetShaderInfoLog(fragmentshader, 512, nullptr, &infolog[0]);
-        printErr("Error compiling fragment shader");
-        printErr(infolog);
-    }
-
-    //create program to link shaders
-    shaderprogram = glCreateProgram();
-    glAttachShader(shaderprogram, vertexshader);
-    glAttachShader(shaderprogram, fragmentshader);
-    glLinkProgram(shaderprogram);
-
-    //shaders can be safely deleted after linking
-    glDeleteShader(vertexshader);
-    glDeleteShader(fragmentshader);
 
     //create vertex array
     glGenVertexArrays(1, &vertarrobj);
@@ -131,7 +82,7 @@ int main()
         getInput(window);
 
         //draw
-        glUseProgram(shaderprogram);
+        myshaders.useshaders();
         glBindVertexArray(vertarrobj);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
