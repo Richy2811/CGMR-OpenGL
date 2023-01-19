@@ -3,6 +3,8 @@
 #include "Shader.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 //define constants for preferred window size
 enum
@@ -19,6 +21,7 @@ int main()
     unsigned char* imagedata;
     int texturewidth, textureheight, colourchannels;
     float imagebordercolour[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    unsigned int rotationtransform;
 
     //initialize glfw library
     if (!glfwInit())
@@ -108,6 +111,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, vertexbufobj);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    //create element buffer object
     glGenBuffers(1, &vertelemobj);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertelemobj);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -119,6 +123,10 @@ int main()
     //tell OpenGL where texture position data can be found in vertices array
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    //create rotation matrix
+    glm::mat4 rotationmatrix = glm::mat4(1.0f);
+    rotationmatrix = glm::rotate(rotationmatrix, glm::radians(180.0f), glm::vec3(0, 0, 1));
 
     //loop until window is closed
     while (!glfwWindowShouldClose(window))
@@ -133,11 +141,14 @@ int main()
         //bind texture
         glBindTexture(GL_TEXTURE_2D, sampletexture);
 
+        //rotate rectangle
+        rotationtransform = glGetUniformLocation(myshaders.getId(), "rotationtransform");
+        glUniformMatrix4fv(rotationtransform, 1, GL_FALSE, glm::value_ptr(rotationmatrix));
+
         //draw rectangle
         myshaders.useshaders();
         glBindVertexArray(vertarrobj);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //glBindVertexArray(0);
 
         //swap buffer and poll for events
         glfwSwapBuffers(window);

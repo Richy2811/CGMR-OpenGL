@@ -8,4 +8,5 @@ class Shader
 		Shader(const char* vertexsourcepath, const char* fragmentsourcepath);
 
 		void useshaders();
+		const unsigned int getId() const;
 };

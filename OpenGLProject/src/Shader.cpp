@@ -84,3 +84,8 @@ void Shader::useshaders()
 {
     glUseProgram(_programId);
 }
+
+const unsigned int Shader::getId() const
+{
+    return _programId;
+}
