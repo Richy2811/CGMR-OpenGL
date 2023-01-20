@@ -30,8 +30,8 @@ int main()
 {
     GLFWwindow* window;
     unsigned int vertexbufobjcube, vertarrobjcube;
-    unsigned int vertelemobjmiddle;
-    unsigned int sampletexture;
+    unsigned int vertarrobjlight;
+    unsigned int cubetexture, lighttexture;
     unsigned char* imagedata;
     int texturewidth, textureheight, colourchannels;
     float imagebordercolour[] = { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -112,7 +112,8 @@ int main()
     });
 
     //load and compile shaders
-    Shader myshaders("./shaders/vertex.vert", "./shaders/fragment.frag");
+    Shader cubeshader("./shaders/vertex.vert", "./shaders/fragment.frag");
+    Shader lightshader("./shaders/vertex_light.vert", "./shaders/fragment_light.frag");
 
     //create vertices
     float vertices[] =
@@ -155,9 +156,9 @@ int main()
 		-0.5f,  0.5f, -0.5f,    0.0f, 1.0f
     };
 
-    //create and bind texture operations to current texture
-    glGenTextures(1, &sampletexture);
-    glBindTexture(GL_TEXTURE_2D, sampletexture);
+    //create and bind texture operations to cube texture
+    glGenTextures(1, &cubetexture);
+    glBindTexture(GL_TEXTURE_2D, cubetexture);
 
     //set texture options
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -183,11 +184,40 @@ int main()
     //free allocated data
     stbi_image_free(imagedata);
 
-    //create vertex array
+
+    //create and bind texture operations to light object texture
+    glGenTextures(1, &lighttexture);
+    glBindTexture(GL_TEXTURE_2D, lighttexture);
+
+    //set texture options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, imagebordercolour);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //copy image data
+    imagedata = stbi_load("./textures/sun.jpg", &texturewidth, &textureheight, &colourchannels, 0);
+
+    if (imagedata)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texturewidth, textureheight, 0, GL_RGB, GL_UNSIGNED_BYTE, imagedata);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printErr("Error loading texture");
+    }
+
+    //free allocated data
+    stbi_image_free(imagedata);
+
+    //create vertex array for cube
     glGenVertexArrays(1, &vertarrobjcube);
     glBindVertexArray(vertarrobjcube);
 
-    //create vertex buffer and copy vertex data into object
+    //create vertex buffer and copy vertex data into cube
     glGenBuffers(1, &vertexbufobjcube);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbufobjcube);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -197,6 +227,18 @@ int main()
     glEnableVertexAttribArray(0);
 
     //tell OpenGL where texture position data can be found in vertices array
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    //create vertex array for light source
+    glGenVertexArrays(1, &vertarrobjlight);
+    glBindVertexArray(vertarrobjlight);
+
+    //reuse cube buffer for second object
+    glBindBuffer(GL_ARRAY_BUFFER, vertarrobjcube);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -210,36 +252,55 @@ int main()
         //get input
         getInput(window);
 
-        //bind texture
-        glBindTexture(GL_TEXTURE_2D, sampletexture);
+        cubeshader.useshaders();
+        glBindTexture(GL_TEXTURE_2D, cubetexture);
 
         //create rotation matrix
         glm::mat4 modeltransform = glm::mat4(1.0f);
         //scale model
         modeltransform = glm::scale(modeltransform, glm::vec3(0.4f, 0.4f, 0.4f));
         //rotate rectangle around 0, 0, 0
-        modeltransform = glm::translate(modeltransform, glm::vec3(0, 0, -1.7f));
-        modeltransform = glm::rotate(modeltransform, (float)glfwGetTime(), glm::vec3(0, 1, 0));
-        modeltransform = glm::translate(modeltransform, glm::vec3(0, 0, 1.7f));
-
-        //glm::mat4 modeltransform = glm::mat4(1.0f);
-        //modeltransform = glm::rotate(modeltransform, glm::radians(-50.0f), glm::vec3(1, 0, 0));
-        model = glGetUniformLocation(myshaders.getId(), "model");
+        modeltransform = glm::translate(modeltransform, glm::vec3(0, 0, -4.0f));
+        modeltransform = glm::rotate(modeltransform, (float)glfwGetTime(), glm::vec3(1, 1, 0));
+        modeltransform = glm::translate(modeltransform, glm::vec3(0, 0, 4.0f));
+        model = glGetUniformLocation(cubeshader.getId(), "model");
         glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr(modeltransform));
 
         glm::mat4 viewtransform = glm::mat4(1.0f);
         viewtransform = glm::lookAt(camerapos, camerapos + cameraforward, cameraup);
-        view = glGetUniformLocation(myshaders.getId(), "view");
+        view = glGetUniformLocation(cubeshader.getId(), "view");
         glUniformMatrix4fv(view, 1, GL_FALSE, glm::value_ptr(viewtransform));
 
         glm::mat4 projectiontransform = glm::mat4(1.0f);
         projectiontransform = glm::perspective(glm::radians(45.0f), (float)INIT_WINDOW_HEIGHT / (float)INIT_WINDOW_WIDTH, 0.1f, 100.0f);
-        projection = glGetUniformLocation(myshaders.getId(), "projection");
+        projection = glGetUniformLocation(cubeshader.getId(), "projection");
         glUniformMatrix4fv(projection, 1, GL_FALSE, glm::value_ptr(projectiontransform));
 
-        //draw
-        myshaders.useshaders();
-        glBindVertexArray(vertarrobjcube);
+        //draw cube
+    	glBindVertexArray(vertarrobjcube);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+        //reset model transform
+        modeltransform = glm::mat4(1.0f);
+
+        //now use shader for light object
+        lightshader.useshaders();
+        glBindTexture(GL_TEXTURE_2D, lighttexture);
+
+        modeltransform = glm::scale(modeltransform, glm::vec3(0.2f, 0.2f, 0.2f));
+        modeltransform = glm::translate(modeltransform, glm::vec3(0, 0, -3.0f));
+        model = glGetUniformLocation(lightshader.getId(), "model");
+        glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr(modeltransform));
+
+        projection = glGetUniformLocation(lightshader.getId(), "projection");
+        glUniformMatrix4fv(projection, 1, GL_FALSE, glm::value_ptr(projectiontransform));
+
+        view = glGetUniformLocation(lightshader.getId(), "view");
+        glUniformMatrix4fv(view, 1, GL_FALSE, glm::value_ptr(viewtransform));
+
+        //draw light object
+        glBindVertexArray(vertarrobjlight);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         //swap buffer and poll for events

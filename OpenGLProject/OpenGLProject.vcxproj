@@ -143,10 +143,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment.frag" />
+    <None Include="shaders\fragment_light.frag" />
     <None Include="shaders\vertex.vert" />
+    <None Include="shaders\vertex_light.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\sampletexture.jpg" />
+    <Image Include="textures\sun.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
