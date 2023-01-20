@@ -246,7 +246,7 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         //clear frame
-        glClearColor(0.7f, 0.7f, 0.7f, 1);
+        glClearColor(0.1f, 0.1f, 0.1f, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //get input
